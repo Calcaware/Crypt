@@ -1,0 +1,67 @@
+#!/usr/bin/node
+
+const fs = require('fs');
+
+const usage = "Usage: " + process.argv[1].split("/")[process.argv[1].split("/").length-1] +
+	" [options] [file] [password] <output file>\nOptions:\n" +
+	"  -e    --encrypt        Apply the cipher to the specified file.\n" +
+	"  -d    --decrypt        Remove the cipher from the specified file.\n" +
+	"  -h    --help           Get this usage message, but you knew that.\n" +
+	"If <output file> isn't specified one will be created.";
+
+
+function crypt(encrypt, file, password, file_out) {
+	if (!fs.existsSync(file))
+		return console.log("File '" + file + "' not found!");
+	try {
+		var output_content = "";
+		var file_buffer = fs.readFileSync(file);
+		var pi = 0;
+		for (let i = 0; i < file_buffer.length; i++) {
+			if (encrypt)
+				file_buffer[i] += password[pi].charCodeAt(0);
+			else
+				file_buffer[i] -= password[pi].charCodeAt(0);
+			pi++;
+			if (pi >= password.length)
+				pi = 0;
+		}
+		fs.writeFileSync(file_out, file_buffer);
+		console.log("Done");
+	}
+	catch (error) {
+		return console.log(error.message);
+	}
+}
+
+
+(() => {
+	var args = process.argv;
+	args.shift();
+	args.shift();
+	if (args.length == 0)
+		return console.log(usage);
+	if (args.indexOf("-h") !== -1 || args.indexOf("--help") !== -1)
+		return console.log(usage);
+	let options = args[0];
+	let file = args[1];
+	let password = args[2];
+	let file_out = args[3];
+	if (typeof args[3] == 'undefined' || !args[3])
+		file_out = file + ".out";
+	//if (file == file_out)
+		//return console.log("[file] and <output file> should not be the same.");
+	switch (options) {
+		case "-e":
+		case "--encrypt":
+			crypt(true, file, password, file_out);
+			break;
+		case "-d":
+		case "--decrypt":
+			crypt(false, file, password, file_out);
+			break;
+		default:
+			return console.log("Invalid option '" + args[0] + "' specified.");
+			break;
+	}
+})();
